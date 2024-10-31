@@ -61,4 +61,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("io.supercharge:shimmerlayout:2.1.0")
     implementation("com.github.chrisbanes.photoview:library:1.2.4")
+
+    val paging_version = "3.3.2"
+    implementation("androidx.paging:paging-runtime:$paging_version")
 }

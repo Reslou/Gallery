@@ -37,8 +37,7 @@ class PagerPhotoFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        // 通过LayoutInflater将XML布局文件转换为视图对象
+    ): View { // 通过LayoutInflater将XML布局文件转换为视图对象
         _binding = FragmentPagerPhotoBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -58,15 +57,12 @@ class PagerPhotoFragment : Fragment() {
         PagerPhotoListAdapter().apply {
             binding.viewPager2.adapter = this
             submitList(photoList)
-        }
-        // 注册权限请求的启动器
+        } // 注册权限请求的启动器
         requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) {
                     // 权限已授予，执行相关操作
-                    lifecycleScope.launch {
-                        savePhoto()
-                    }
+                    lifecycleScope.launch { savePhoto() }
                 } else {
                     // 权限被拒绝，处理拒绝的情况
                     toast("没有存储权限")
@@ -79,28 +75,25 @@ class PagerPhotoFragment : Fragment() {
                     override fun onPageSelected(position: Int) {
                         super.onPageSelected(position)
                         binding.photoTag.text =
-                            getString(R.string.photo_tag_text, position + 1, photoList?.size)
+                            getString(R.string.photo_tag, position + 1, photoList?.size)
                     }
                 })
                 setCurrentItem(arguments?.getInt("PHOTO_POSITION") ?: 0, false)
             }
             // 设置保存按钮的点击监听器
             buttonSave.setOnClickListener {
-                if (ContextCompat.checkSelfPermission(
-                        requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
                     // 请求权限
                     requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 } else {
                     // 已有权限，执行保存操作
-                    lifecycleScope.launch {
-                        savePhoto()
-                    }
+                    lifecycleScope.launch { savePhoto() }
                 }
             }
         }
     }
+
 
     /**
      * 保存当前显示的图片到外部存储
@@ -109,27 +102,18 @@ class PagerPhotoFragment : Fragment() {
         var result = false
         withContext(Dispatchers.IO) {
             // 获取当前显示的图片并转换为Bitmap
-            val holder =
-                (binding.viewPager2[0] as RecyclerView).findViewHolderForAdapterPosition(binding.viewPager2.currentItem) as PagerPhotoViewHolder
-            val bitmap = holder.pagerPhoto.drawable.toBitmap()
+            val holder = (binding.viewPager2[0] as RecyclerView)
+                .findViewHolderForAdapterPosition(binding.viewPager2.currentItem) as PagerPhotoViewHolder
+            val bitmap = holder.binding.pagerPhoto.drawable.toBitmap()
             // 在外部存储中创建新的图片记录
-            val saveUri = requireContext().contentResolver.insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues()
-            ) ?: run {
-                return@withContext
-            }
+            val saveUri = requireContext().contentResolver
+                .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues())
+                ?: run { return@withContext }
             // 将Bitmap数据写入到外部存储
-            requireContext().contentResolver.openOutputStream(saveUri)?.use {
-                if (bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)) {
-                    result = true
-                }
-            }
+            requireContext().contentResolver.openOutputStream(saveUri)
+                ?.use { if (bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)) result = true }
         }
-        if (result) {
-            toast("存储成功")
-        } else {
-            toast("存储失败")
-        }
+        if (result) toast("存储成功") else toast("存储失败")
     }
 
     private fun toast(text: String) {

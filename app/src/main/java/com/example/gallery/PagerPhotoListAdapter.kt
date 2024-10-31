@@ -1,13 +1,12 @@
 package com.example.gallery
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import uk.co.senab.photoview.PhotoView
+import com.example.gallery.databinding.PagerPhotoViewBinding
 
 class PagerPhotoListAdapter : ListAdapter<PhotoItem, PagerPhotoViewHolder>(DiffCallback) {
     object DiffCallback : DiffUtil.ItemCallback<PhotoItem>() {
@@ -21,20 +20,15 @@ class PagerPhotoListAdapter : ListAdapter<PhotoItem, PagerPhotoViewHolder>(DiffC
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PagerPhotoViewHolder {
-        LayoutInflater.from(parent.context).inflate(R.layout.pager_photo_view, parent, false)
-            .apply {
-                return PagerPhotoViewHolder(this)
-            }
+        val binding =
+            PagerPhotoViewBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return PagerPhotoViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: PagerPhotoViewHolder, position: Int) {
-        Glide.with(holder.itemView)
-            .load(getItem(position).fullUrl)
-            .placeholder(R.drawable.photo_placeholder)
-            .into(holder.pagerPhoto)
+        Glide.with(holder.itemView).load(getItem(position).fullUrl)
+            .placeholder(R.drawable.photo_placeholder).into(holder.binding.pagerPhoto)
     }
 }
 
-class PagerPhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    val pagerPhoto: PhotoView = itemView.findViewById(R.id.pagerPhoto)
-}
+class PagerPhotoViewHolder(val binding: PagerPhotoViewBinding) : RecyclerView.ViewHolder(binding.root)

@@ -7,25 +7,74 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.gallery.databinding.FragmentGalleryBinding
 
 class GalleryFragment : Fragment() {
     private var _binding: FragmentGalleryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var galleryViewModel: GalleryViewModel
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentGalleryBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val galleryAdapter = GalleryAdapter()
-
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
+        val galleryViewModel: GalleryViewModel by viewModels()
+        val galleryAdapter = GalleryAdapter(galleryViewModel)
+        val swipeRefreshLayout: SwipeRefreshLayout = binding.swipeRefreshLayout
+        with(galleryViewModel) {
+            photoListLive.observe(viewLifecycleOwner) {
+                if (galleryViewModel.needToScrollToTop) {
+                    binding.recyclerView.scrollToPosition(0)
+                    galleryViewModel.needToScrollToTop = false
+                }
+                galleryAdapter.submitList(it)
+                swipeRefreshLayout.isRefreshing = false
+            }
+            dataStatusLive.observe(viewLifecycleOwner) {
+                galleryAdapter.footerViewStatus = it
+                galleryAdapter.notifyItemChanged(galleryAdapter.itemCount - 1)
+                if (it == DATA_STATUS_NETWORK_ERROR) swipeRefreshLayout.isRefreshing = false
+            }
+        }
+        with(binding) {
+            with(recyclerView) {
+                adapter = galleryAdapter
+                layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+                addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        super.onScrolled(recyclerView, dx, dy)
+                        if (dy < 0) return
+                        val layoutManager = layoutManager as StaggeredGridLayoutManager
+                        val intArray = IntArray(2)
+                        layoutManager.findLastVisibleItemPositions(intArray)
+                        if (intArray[0] == galleryAdapter.itemCount - 1) {
+                            galleryViewModel.fetchData()
+                        }
+                    }
+                })
+            }
+        }
+        swipeRefreshLayout.setOnRefreshListener {
+            galleryViewModel.resetQuery()
+        }
+        // 添加操作菜单
+        requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu, menu)
             }
@@ -33,8 +82,8 @@ class GalleryFragment : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.swipeIndicator -> {
-                        binding.SwipeRefreshLayout.isRefreshing = true
-                        galleryViewModel.fetchData()
+                        swipeRefreshLayout.isRefreshing = true
+                        galleryViewModel.resetQuery()
                         true
                     }
 
@@ -42,33 +91,5 @@ class GalleryFragment : Fragment() {
                 }
             }
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-        binding.RecyclerView.apply {
-            adapter = galleryAdapter
-            layoutManager = GridLayoutManager(requireContext(), 2)
-        }
-        galleryViewModel = ViewModelProvider(
-            this, ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-        )[GalleryViewModel::class.java]
-        galleryViewModel.photoListLive.observe(viewLifecycleOwner) {
-            galleryAdapter.submitList(it)
-            binding.SwipeRefreshLayout.isRefreshing = false
-        }
-        galleryViewModel.photoListLive.value ?: galleryViewModel.fetchData()
-        binding.SwipeRefreshLayout.setOnRefreshListener {
-            galleryViewModel.fetchData()
-        }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentGalleryBinding.inflate(inflater, container, false)
-        val view = binding.root
-        return view
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

@@ -52,16 +52,15 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("com.android.volley:volley:1.2.1")
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.volley)
+    implementation(libs.androidx.swiperefreshlayout)
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.5")
-    implementation("androidx.navigation:navigation-fragment:2.8.0")
-    implementation("androidx.navigation:navigation-ui:2.8.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.6")
+    implementation("androidx.navigation:navigation-fragment:2.8.2")
+    implementation("androidx.navigation:navigation-ui:2.8.2")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("io.supercharge:shimmerlayout:2.1.0")
     implementation("com.github.chrisbanes.photoview:library:1.2.4")
 
-    val paging_version = "3.3.2"
-    implementation("androidx.paging:paging-runtime:$paging_version")
+    implementation(libs.androidx.paging.runtime)
 }

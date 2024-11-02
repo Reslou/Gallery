@@ -55,7 +55,7 @@ class PagerPhotoFragment : Fragment() {
         // 获取传递过来的照片列表
         val photoList = arguments?.getParcelableArrayList<PhotoItem>("PHOTO_LIST")
         // 初始化适配器并设置到ViewPager2
-        PagerPhotoListAdapter().apply {
+        PagerPhotoAdapter().apply {
             binding.viewPager2.adapter = this
             submitList(photoList)
         } // 注册权限请求的启动器

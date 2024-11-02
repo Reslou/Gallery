@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.gallery.databinding.PagerPhotoViewBinding
 
-class PagerPhotoListAdapter : ListAdapter<PhotoItem, PagerPhotoViewHolder>(DiffCallback) {
+class PagerPhotoAdapter : ListAdapter<PhotoItem, PagerPhotoViewHolder>(DiffCallback) {
     object DiffCallback : DiffUtil.ItemCallback<PhotoItem>() {
         override fun areItemsTheSame(oldItem: PhotoItem, newItem: PhotoItem): Boolean {
             return oldItem.photoId == newItem.photoId

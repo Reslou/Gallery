@@ -1,7 +1,6 @@
 package com.example.gallery
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -38,34 +37,28 @@ class GalleryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val viewModel: GalleryViewModel by viewModels()
-        val adapter = GalleryAdapter()
+        val adapter = PhotoAdapter(PhotoAdapter.PhotoComparator)
+        val footerAdapter = adapter.withLoadStateFooter(LoadStateAdapter(adapter::retry))
         with(binding) {
             with(recyclerView) {
-                this.adapter = adapter
+                this.adapter = footerAdapter
                 layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
             }
             with(swipeRefreshLayout) {
                 setOnRefreshListener { adapter.refresh() }
-                viewLifecycleOwner.lifecycleScope.launch {
-                    viewModel.flow.collectLatest { adapter.submitData(it) }
-                }
+                viewLifecycleOwner.lifecycleScope.launch { viewModel.flow.collectLatest { adapter.submitData(it) } }
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             adapter.loadStateFlow.collectLatest {
                 binding.swipeRefreshLayout.isRefreshing = it.refresh is LoadState.Loading
-                Log.d("hasError", "onViewCreated: ${it.hasError}")
             }
         }
         // 添加操作菜单
-        requireActivity().addMenuProvider(
-            menuProvider(adapter),
-            viewLifecycleOwner,
-            Lifecycle.State.RESUMED
-        )
+        requireActivity().addMenuProvider(menuProvider(adapter), viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun menuProvider(adapter: GalleryAdapter) = object : MenuProvider {
+    private fun menuProvider(adapter: PhotoAdapter) = object : MenuProvider {
         override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
             menuInflater.inflate(R.menu.menu, menu)
         }

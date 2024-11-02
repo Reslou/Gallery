@@ -1,8 +1,7 @@
 package com.example.gallery
 
-import android.content.Intent
-import android.content.IntentSender
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -16,10 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.gallery.databinding.FragmentGalleryBinding
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
 
 class GalleryFragment : Fragment() {
@@ -40,37 +37,52 @@ class GalleryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val galleryViewModel: GalleryViewModel by viewModels()
-        val galleryAdapter = GalleryAdapter()
+        val viewModel: GalleryViewModel by viewModels()
+        val adapter = GalleryAdapter()
         with(binding) {
             with(recyclerView) {
-                adapter = galleryAdapter
+                this.adapter = adapter
                 layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
             }
-            swipeRefreshLayout.setOnRefreshListener { galleryAdapter.refresh() }
+            with(swipeRefreshLayout) {
+                setOnRefreshListener { adapter.refresh() }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.flow.collectLatest { adapter.submitData(it) }
+                }
+            }
         }
-        lifecycleScope.launch {
-            galleryViewModel.flow.collectLatest { galleryAdapter.submitData(it) }
-            galleryAdapter.loadStateFlow.collectLatest {
+        viewLifecycleOwner.lifecycleScope.launch {
+            adapter.loadStateFlow.collectLatest {
                 binding.swipeRefreshLayout.isRefreshing = it.refresh is LoadState.Loading
+                Log.d("hasError", "onViewCreated: ${it.hasError}")
             }
         }
         // 添加操作菜单
-        requireActivity().addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.menu, menu)
-            }
+        requireActivity().addMenuProvider(
+            menuProvider(adapter),
+            viewLifecycleOwner,
+            Lifecycle.State.RESUMED
+        )
+    }
 
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                return when (menuItem.itemId) {
-                    R.id.swipeIndicator -> {
-                        galleryAdapter.refresh()
-                        true
-                    }
+    private fun menuProvider(adapter: GalleryAdapter) = object : MenuProvider {
+        override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+            menuInflater.inflate(R.menu.menu, menu)
+        }
 
-                    else -> false
+        override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+            return when (menuItem.itemId) {
+                R.id.itemRefresh -> {
+                    adapter.refresh()
+                    true
                 }
+                R.id.itemRetry -> {
+                    adapter.retry()
+                    true
+                }
+
+                else -> false
             }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        }
     }
 }

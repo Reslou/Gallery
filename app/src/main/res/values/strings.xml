@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">Gallery</string>
     <string name="photo_tag">%d / %d</string>
+    <string name="photo_tag_text">1 / 100</string>
     <string name="content_description">previewPhoto</string>
     <string name="footer_text">正在加载</string>
+    <string name="buttonSave">saveButton</string>
+    <string name="thumpImage">thumpImage</string>
+    <string name="collectionsImage">collectionsImage</string>
+    <string name="itemRetry">Retry</string>
+    <string name="itemRefresh">Fresh</string>
 </resources>

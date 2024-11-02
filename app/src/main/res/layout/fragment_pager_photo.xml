@@ -25,7 +25,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="bottom|center_horizontal"
-        android:text="1 / 100"
+        android:text="@string/photo_tag_text"
         android:textColor="@android:color/background_light"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -36,10 +36,12 @@
 
     <ImageView
         android:id="@+id/buttonSave"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginEnd="16dp"
         android:clickable="true"
+        android:contentDescription="@string/buttonSave"
+        android:focusable="true"
         android:src="@drawable/save_button_image"
         app:layout_constraintBottom_toBottomOf="@+id/photoTag"
         app:layout_constraintEnd_toEndOf="parent"

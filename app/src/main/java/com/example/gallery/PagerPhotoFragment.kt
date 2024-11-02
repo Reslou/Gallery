@@ -23,6 +23,7 @@ import com.example.gallery.databinding.FragmentPagerPhotoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.ArrayList
 
 /**
  * 图片详情分页器的实现类
@@ -33,7 +34,7 @@ class PagerPhotoFragment : Fragment() {
     private val binding get() = _binding!!
 
     // 权限请求的启动器
-    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var launcher: ActivityResultLauncher<String>
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -48,52 +49,54 @@ class PagerPhotoFragment : Fragment() {
         _binding = null
     }
 
+    @Suppress("DEPRECATION")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         // 获取传递过来的照片列表
-        @Suppress("DEPRECATION") val photoList =
-            arguments?.getParcelableArrayList<PhotoItem>("PHOTO_LIST")
+        val photoList = arguments?.getParcelableArrayList<PhotoItem>("PHOTO_LIST")
         // 初始化适配器并设置到ViewPager2
         PagerPhotoListAdapter().apply {
             binding.viewPager2.adapter = this
             submitList(photoList)
         } // 注册权限请求的启动器
-        requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-                if (isGranted) {
-                    // 权限已授予，执行相关操作
-                    lifecycleScope.launch { savePhoto() }
-                } else {
-                    // 权限被拒绝，处理拒绝的情况
-                    toast("没有存储权限")
-                }
-            }
+        launcher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { request(it) }
         // 设置ViewPager2的页面变化监听器和初始位置
-        with(binding) {
-            with(viewPager2) {
-                registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                    override fun onPageSelected(position: Int) {
-                        super.onPageSelected(position)
-                        binding.photoTag.text =
-                            getString(R.string.photo_tag, position + 1, photoList?.size)
-                    }
-                })
-                setCurrentItem(arguments?.getInt("PHOTO_POSITION") ?: 0, false)
-            }
-            // 设置保存按钮的点击监听器
-            buttonSave.setOnClickListener {
-                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                    // 请求权限
-                    requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                } else {
-                    // 已有权限，执行保存操作
-                    lifecycleScope.launch { savePhoto() }
-                }
-            }
+        binding.viewPager2.registerOnPageChangeCallback(callback(photoList))
+        binding.viewPager2.setCurrentItem(arguments?.getInt("PHOTO_POSITION") ?: 0, false)
+        // 设置保存按钮的点击监听器
+        binding.buttonSave.setOnClickListener { listener() }
+    }
+
+    private fun request(it: Boolean) {
+        if (it) {
+            // 权限已授予，执行相关操作
+            lifecycleScope.launch { savePhoto() }
+        } else {
+            // 权限被拒绝，处理拒绝的情况
+            toast("没有存储权限")
         }
     }
 
+    private fun callback(photoList: ArrayList<PhotoItem>?) =
+        object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                binding.photoTag.text = getString(R.string.photo_tag, position + 1, photoList?.size)
+            }
+        }
+
+    private fun listener() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // 请求权限
+            launcher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            // 已有权限，执行保存操作
+            lifecycleScope.launch { savePhoto() }
+        }
+    }
 
     /**
      * 保存当前显示的图片到外部存储
@@ -102,13 +105,13 @@ class PagerPhotoFragment : Fragment() {
         var result = false
         withContext(Dispatchers.IO) {
             // 获取当前显示的图片并转换为Bitmap
-            val holder = (binding.viewPager2[0] as RecyclerView)
-                .findViewHolderForAdapterPosition(binding.viewPager2.currentItem) as PagerPhotoViewHolder
+            val holder =
+                (binding.viewPager2[0] as RecyclerView).findViewHolderForAdapterPosition(binding.viewPager2.currentItem) as PagerPhotoViewHolder
             val bitmap = holder.binding.pagerPhoto.drawable.toBitmap()
             // 在外部存储中创建新的图片记录
-            val saveUri = requireContext().contentResolver
-                .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues())
-                ?: run { return@withContext }
+            val saveUri = requireContext().contentResolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues()
+            ) ?: run { return@withContext }
             // 将Bitmap数据写入到外部存储
             requireContext().contentResolver.openOutputStream(saveUri)
                 ?.use { if (bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)) result = true }

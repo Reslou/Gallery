@@ -19,13 +19,11 @@ class GalleryAdapter : PagingDataAdapter<PhotoItem, MyViewHolder>(DIFFCALLBACK) 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val binding = GalleryCellBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         val holder = MyViewHolder(binding)
-        with(holder) {
-            itemView.setOnClickListener {
-                Bundle().apply {
-                    putParcelableArrayList("PHOTO_LIST", ArrayList(snapshot()))
-                    putInt("PHOTO_POSITION", bindingAdapterPosition)
-                    itemView.findNavController().navigate(R.id.galleryToPhoto, this)
-                }
+        holder.itemView.setOnClickListener {
+            Bundle().apply {
+                putParcelableArrayList("PHOTO_LIST", ArrayList(snapshot()))
+                putInt("PHOTO_POSITION", holder.bindingAdapterPosition)
+                holder.itemView.findNavController().navigate(R.id.galleryToPhoto, this)
             }
         }
         return holder
@@ -45,26 +43,28 @@ class GalleryAdapter : PagingDataAdapter<PhotoItem, MyViewHolder>(DIFFCALLBACK) 
             textViewCollections.text = photoItem.photoCollections.toString()
             Glide.with(holder.itemView).load(photoItem.previewUrl)
                 .placeholder(R.drawable.photo_placeholder)
-                .listener(object : RequestListener<Drawable> {
-                    override fun onLoadFailed(
-                        e: GlideException?,
-                        model: Any?,
-                        target: Target<Drawable>,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        return false
-                    }
+                .listener(listener()).into(imageViewPreviewPhoto)
+        }
+    }
 
-                    override fun onResourceReady(
-                        resource: Drawable,
-                        model: Any,
-                        target: Target<Drawable>?,
-                        dataSource: DataSource,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        return false.also { shimmerLayoutCell.stopShimmerAnimation() }
-                    }
-                }).into(imageViewPreviewPhoto)
+    private fun GalleryCellBinding.listener() = object : RequestListener<Drawable> {
+        override fun onLoadFailed(
+            e: GlideException?,
+            model: Any?,
+            target: Target<Drawable>,
+            isFirstResource: Boolean
+        ): Boolean {
+            return false
+        }
+
+        override fun onResourceReady(
+            resource: Drawable,
+            model: Any,
+            target: Target<Drawable>?,
+            dataSource: DataSource,
+            isFirstResource: Boolean
+        ): Boolean {
+            return false.also { shimmerLayoutCell.stopShimmerAnimation() }
         }
     }
 

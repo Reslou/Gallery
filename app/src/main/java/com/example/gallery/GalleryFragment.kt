@@ -13,6 +13,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.gallery.databinding.FragmentGalleryBinding
 import kotlinx.coroutines.flow.collectLatest
@@ -55,10 +56,10 @@ class GalleryFragment : Fragment() {
             }
         }
         // 添加操作菜单
-        requireActivity().addMenuProvider(menuProvider(adapter), viewLifecycleOwner, Lifecycle.State.RESUMED)
+        requireActivity().addMenuProvider(menuProvider(adapter,binding.recyclerView), viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun menuProvider(adapter: PhotoAdapter) = object : MenuProvider {
+    private fun menuProvider(adapter: PhotoAdapter, recyclerView: RecyclerView) = object : MenuProvider {
         override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
             menuInflater.inflate(R.menu.menu, menu)
         }
@@ -67,6 +68,7 @@ class GalleryFragment : Fragment() {
             return when (menuItem.itemId) {
                 R.id.itemRefresh -> {
                     adapter.refresh()
+                    recyclerView.scrollToPosition(0)
                     true
                 }
                 R.id.itemRetry -> {
